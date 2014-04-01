@@ -33,10 +33,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="agsXMPP">
-      <HintPath>..\..\..\DLLs\agsXMPP.dll</HintPath>
+      <HintPath>.\agsXMPP.dll</HintPath>
     </Reference>
     <Reference Include="crypto">
-      <HintPath>..\..\..\..\..\Downloads\crypto.dll</HintPath>
+      <HintPath>.\crypto.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

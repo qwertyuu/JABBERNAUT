@@ -18,17 +18,20 @@ namespace JABBERNAUT
 {
     class Program
     {
+        static Dictionary<string, Func<string, string>> Games;
         static List<Jid> online;
         static XmppClientConnection xmpp = new XmppClientConnection("chat.facebook.com");
         static Dictionary<string, Dictionary<string, string>> usernames;
+        static string CurrentState;
         static void Main(string[] args)
         {
+            Games = new Dictionary<string, Func<string, string>>();
+            rand = new Random();
+            CurrentState = "none";
             online = new List<Jid>();
             usernames = new Dictionary<string, Dictionary<string, string>>();
             Thread query = new Thread(TellUsTheTruth);
             query.IsBackground = true;
-            Console.WriteLine("Login");
-            Console.WriteLine();
             Console.WriteLine("JID: bot.araph@chat.facebook.com");
             string JID_Sender = "bot.araph@chat.facebook.com";
             string Password = "";
@@ -43,8 +46,8 @@ namespace JABBERNAUT
             xmpp.OnLogin += new ObjectHandler(xmpp_OnLogin);
             xmpp.OnClose += xmpp_OnClose;
             xmpp.OnError += xmpp_OnError;
-            xmpp.OnRosterEnd += xmpp_OnRosterEnd;
             xmpp.OnPresence += new PresenceHandler(xmpp_OnPresence);
+            Games["hotandcold"] = new Func<string, string>(HotAndCold);
             query.Start(xmpp);
             while (true)
             {
@@ -56,6 +59,60 @@ namespace JABBERNAUT
                 else
                 {
                     AttentionWhore();
+                }
+            }
+        }
+        static int turn = 0;
+        static int oldGuess;
+        static int toGuess;
+        static int guess;
+        static Random rand;
+        private static string HotAndCold(string arg)
+        {
+            oldGuess = guess;
+            guess = -1;
+            if (!int.TryParse(arg, out guess) && guess >= 0 && guess <= 100)
+            {
+                return "Ceci n'était pas une entrée valide\n(Le chiffre doit être entre 0 et 100)";
+            }
+            if (turn == 0)
+            {
+                oldGuess = toGuess;
+                toGuess = rand.Next(100);
+                if (guess == toGuess)
+                {
+                    CurrentState = "none";
+                    return "Bravo! C'était ça!";
+                }
+                else
+                {
+                    turn++;
+                    return "Désolé, essai encore.";
+                }
+            }
+            else
+            {
+                turn++;
+                int DiffOldGuess = (int)Math.Abs(toGuess - oldGuess);
+                int DiffCurrentGuess = (int)Math.Abs(toGuess - guess);
+                if (guess == toGuess)
+                {
+                    CurrentState = "none";
+                    int score = turn;
+                    turn = 0;
+                    return string.Format("Bravo, tu l'as trouvé en {0} coups!", score);
+                }
+                else if (DiffCurrentGuess > DiffOldGuess)
+                {
+                    return "Tu refroidit";
+                }
+                else if (DiffCurrentGuess < DiffOldGuess)
+                {
+                    return "Tu réchauffe!";
+                }
+                else
+                {
+                    return "C'est tiède";
                 }
             }
         }
@@ -74,7 +131,34 @@ namespace JABBERNAUT
             Console.WriteLine("<{0}>{1}", usernames[msg.From.User]["name"], msg.Body);
             if (msg.Body != null)
             {
-                xmpp.Send(new ActualMessage(msg.From, string.Format("{0}\n\n{1}", msg.Body, new string(msg.Body.Reverse().ToArray()))));
+                ProcessInput(msg);
+            }
+        }
+
+        private static void ProcessInput(ActualMessage msg)
+        {
+            var parts = msg.Body.Split(' ');
+            switch (CurrentState)
+            {
+                case "none":
+                    switch (parts[0].ToLower())
+                    {
+                        case "play":
+                            Console.WriteLine("{0} a entré la commande Play", GetInfo(msg.From.User, "first_name"));
+                            if (Games.ContainsKey(parts[1].ToLower()))
+                            {
+                                CurrentState = parts[1].ToLower();
+                                xmpp.Send(new ActualMessage(msg.From, "Joue à " + parts[1].ToLower()));
+                                Console.WriteLine("{0} a entré la commande Play {1}", GetInfo(msg.From.User, "first_name"), parts[1].ToLower());
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    xmpp.Send(new ActualMessage(msg.From, Games[CurrentState](msg.Body)));
+                    break;
             }
         }
 
@@ -112,14 +196,9 @@ namespace JABBERNAUT
             return toReturn;
         }
 
-        static void xmpp_OnRosterEnd(object sender)
-        {
-            //Console.WriteLine("Roster end");
-        }
-
         static void xmpp_OnClose(object sender)
         {
-            Console.WriteLine("Closed");
+            Console.WriteLine("Connection closed");
         }
 
         static void xmpp_OnError(object sender, Exception ex)
@@ -131,7 +210,7 @@ namespace JABBERNAUT
         {
             while (true)
             {
-                Console.Title = string.Format("Connection State:{0} -- Authenticated?:{1}", xmpp.XmppConnectionState, xmpp.Authenticated);
+                Console.Title = string.Format("Connection State:{0} -- Authenticated?:{1} -- CurrentState:{2}", xmpp.XmppConnectionState, xmpp.Authenticated, CurrentState);
                 Thread.Sleep(100);
             }
         }
@@ -155,7 +234,7 @@ namespace JABBERNAUT
                 }
                 string uName = GetInfo(pres.From.User, "name");
                 Console.WriteLine("{0} connected!", uName);
-                xmpp.Send(new ActualMessage(pres.From, string.Format("Salut {0}!", GetInfo(pres.From.User, "first_name"))));
+                //xmpp.Send(new ActualMessage(pres.From, string.Format("Salut {0}!", GetInfo(pres.From.User, "first_name"))));
             }
             //Console.WriteLine("{0}@{1}  {2}",
             //    pres.From.User, pres.From.Server, pres.Type, pres.Nickname);

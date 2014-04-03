@@ -82,6 +82,7 @@ namespace JABBERNAUT
         internal void QuitGame()
         {
             Tell("De retour au chat!");
+            Program.Loggit(this, "a quitté le jeu", ConsoleColor.DarkYellow);
             WhatAmIDoing = new State(State.Types.Chatting);
             WhatAmIPlaying = null;
         }

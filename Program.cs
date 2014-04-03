@@ -16,14 +16,13 @@ using System.IO;
 
 namespace JABBERNAUT
 {
-    public static enum Games { None, HotAndCold }
+    public enum Games { None, HotAndCold }
     class Program
     {
         static List<Utilisateur> online;
-        static XmppClientConnection xmpp = new XmppClientConnection("chat.facebook.com");
+        public static XmppClientConnection xmpp = new XmppClientConnection("chat.facebook.com");
         static void Main(string[] args)
         {
-            CurrentState = new State(State.Types.Chatting);
             online = new List<Utilisateur>();
             Thread query = new Thread(TellUsTheTruth);
             query.IsBackground = true;
@@ -54,20 +53,31 @@ namespace JABBERNAUT
 
         static void xmpp_OnMessage(object sender, ActualMessage msg)
         {
-            var user = online.Find(a => a.ID == msg.From);
-            if (user == null)
-            {
-                user = new Utilisateur(msg.From);
-                online.Add(user);
-            }
+            var user = GIMME(msg.From);
 
-            string uName = online.Find(a => a.ID == msg.From).infos.FirstName;
-            Console.WriteLine("<{0}>{1}", user.infos.Name, msg.Body);
-            if (msg.Body != null)
+            string uName = user.infos.FirstName;
+            Program.Loggit(user, msg.Body, ConsoleColor.Green);
+            if (!string.IsNullOrEmpty(msg.Body))
             {
                 //FAIRE UN INPUTHANDLER POUR LES INPUT!!!!!
-                user.Update(msg.Body);
+                //non raph tayeule
+                user.Input(msg.Body);
             }
+        }
+
+        private static Utilisateur GIMME(Jid jid)
+        {
+            var toReturn = online.Find(a => a.ID.User == jid.User);
+            if (toReturn == null)
+            {
+                toReturn = new Utilisateur(jid);
+                online.Add(toReturn);
+
+                Program.Loggit(toReturn, "Added!", ConsoleColor.Blue);
+                
+                toReturn.Input("aide");
+            }
+            return toReturn;
         }
 
 
@@ -85,35 +95,25 @@ namespace JABBERNAUT
         {
             while (true)
             {
-                Console.Title = string.Format("Connection State:{0} -- Authenticated?:{1} -- CurrentState:{2}", xmpp.XmppConnectionState, xmpp.Authenticated, CurrentState);
+                Console.Title = string.Format("Connection State:{0} -- Authenticated?:{1}", xmpp.XmppConnectionState, xmpp.Authenticated);
                 Thread.Sleep(100);
             }
+        }
+        public static void Loggit(Utilisateur user, string message, ConsoleColor color)
+        {
+            Console.ForegroundColor = color;
+            Console.Write("<{0}>", user.infos.Name);
+            Console.ResetColor();
+            Console.WriteLine(message);
         }
 
         private static void xmpp_OnPresence(object sender, Presence pres)
         {
-            var user = online.Find(a => a.ID == pres.From);
-            if (pres.Type == PresenceType.unavailable)
+            if (pres.Type == PresenceType.available)
             {
-                if (online.Contains(user))
-                {
-                    online.Remove(user);
-                }
+                var user = GIMME(pres.From);
                 string uName = user.infos.FirstName;
-                Console.WriteLine("{0} disconnected!", uName);
             }
-            else
-            {
-                if (!online.Contains(user))
-                {
-                    online.Add(user);
-                }
-                string uName = user.infos.FirstName;
-                Console.WriteLine("{0} connected!", uName);
-                //xmpp.Send(new ActualMessage(pres.From, string.Format("Salut {0}!", GetInfo(pres.From.User, "first_name"))));
-            }
-            //Console.WriteLine("{0}@{1}  {2}",
-            //    pres.From.User, pres.From.Server, pres.Type, pres.Nickname);
         }
 
         private static void xmpp_OnLogin(object sender)

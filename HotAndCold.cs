@@ -14,20 +14,25 @@ namespace JABBERNAUT
         int toGuess;
         int guess;
         Random rand;
-        Utilisateur Player;
-        public HotAndCold(Utilisateur player) : base()
+        public override string GameName { get; set; }
+        public HotAndCold(Utilisateur player) : base(player)
         {
+            GameName = "Hot and Cold";
             rand = new Random();
             toGuess = rand.Next(100);
-            Player = player;
+            Player.Tell("Tu joue à Hot and Cold là!");
         }
-        public override string GameLoop(string arg)
+        public override bool Input(string arg)
         {
+            if (base.Input(arg))
+            {
+                return true;
+            }
             oldGuess = guess;
             guess = -1;
             if (!int.TryParse(arg, out guess) && guess >= 0 && guess <= 100)
             {
-                return "Ceci n'était pas une entrée valide\n(Le chiffre doit être entre 0 et 100)";
+                Player.Tell("Ceci n'était pas une entrée valide\n(Le chiffre doit être entre 0 et 100)");
             }
             else
             {
@@ -36,24 +41,29 @@ namespace JABBERNAUT
                 int DiffCurrentGuess = (int)Math.Abs(toGuess - guess);
                 if (guess == toGuess)
                 {
-                    Player.WhatAmIDoing = new State(State.Types.Chatting);
                     int score = turn;
                     turn = 0;
-                    return string.Format("Bravo, tu l'as trouvé en {0} coups!", score);
+                    Player.Tell(string.Format("Bravo, tu l'as trouvé en {0} coups!", score));
+                    Player.QuitGame();
+                }
+                else if (turn == 1)
+                {
+                    Player.Tell("Pas ça, essaye encore!");
                 }
                 else if (DiffCurrentGuess > DiffOldGuess)
                 {
-                    return "Tu refroidit";
+                    Player.Tell("Tu refroidit");
                 }
                 else if (DiffCurrentGuess < DiffOldGuess)
                 {
-                    return "Tu réchauffe!";
+                    Player.Tell("Tu réchauffe!");
                 }
                 else
                 {
-                    return "C'est tiède";
+                    Player.Tell("C'est tiède");
                 }
             }
+            return false;
         }
     }
 }

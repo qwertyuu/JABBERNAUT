@@ -6,15 +6,22 @@ using System.Threading.Tasks;
 
 namespace JABBERNAUT
 {
-    abstract class Game
+    public abstract class Game
     {
-        public Game()
+        public Utilisateur Player;
+        public abstract string GameName { get; set; }
+        public Game(Utilisateur player)
         {
-
+            Player = player;
         }
-        abstract public string GameLoop(string arg)
+        public virtual bool Input(string arg)
         {
-            return string.Empty;
+            if (arg.Trim().ToLower() == "quit")
+            {
+                Player.QuitGame();
+                return true;
+            }
+            return false;
         }
     }
 }

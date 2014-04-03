@@ -5,9 +5,9 @@ using System.Text;
 
 namespace JABBERNAUT
 {
-    class State
+    public class State
     {
-        public static enum Types { Chatting, Playing }
+        public enum Types { Chatting, Playing }
         public Types state;
         public Games currentlyPlaying;
         public State(Types wut, Games game = Games.None)

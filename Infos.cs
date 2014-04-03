@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 
 namespace JABBERNAUT
 {
-    class Infos
+    public class Infos
     {
         public string ID;
         public string Name;
@@ -23,10 +23,10 @@ namespace JABBERNAUT
             SetInfos(userID.User);
         }
 
-        private void SetInfos(string ID)
+        private void SetInfos(string _id)
         {
             WebClient c = new WebClient();
-            string infos = c.DownloadString("http://graph.facebook.com/" + ID.Substring(1));
+            string infos = c.DownloadString("http://graph.facebook.com/" + _id.Substring(1));
             string asciiInfos = Regex.Replace(infos, @"\\u(?<Value>[a-zA-Z0-9]{4})", m =>
             {
                 return ((char)int.Parse(m.Groups["Value"].Value, NumberStyles.HexNumber)).ToString();

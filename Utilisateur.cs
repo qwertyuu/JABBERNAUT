@@ -27,15 +27,26 @@ namespace JABBERNAUT
             {
                 case State.Types.Chatting:
                     var parts = message.Split(' ');
+                    bool broken = false;
                     switch (parts[0].ToLower())
                     {
                         case "play":
                             Games outGame = Games.None;
+                            if (parts.Length <= 1)
+                            {
+                                broken = true;
+                                break;
+                            }
                             if (Enum.TryParse(parts[1], true, out outGame))
                             {
                                 WhatAmIDoing = new State(State.Types.Playing, outGame);
                                 WhatAmIPlaying = GetGame(outGame);
                                 Program.Loggit(this, string.Format("joue à {0}", WhatAmIPlaying.GameName), ConsoleColor.DarkYellow);
+
+                            }
+                            else
+                            {
+                                Tell("Le jeu \"" + parts[1] + "\" n'existe pas!");
                             }
                             break;
                         case "aide":
@@ -44,6 +55,10 @@ namespace JABBERNAUT
                         default:
                             Tell(new string(message.Reverse().ToArray()));
                             break;
+                    }
+                    if (broken)
+                    {
+                        Tell(new string(message.Reverse().ToArray()));
                     }
                     break;
                 case State.Types.Playing:

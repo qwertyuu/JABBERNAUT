@@ -87,6 +87,7 @@ namespace JABBERNAUT
                     return null;
             }
         }
+        
         public void Tell(string message)
         {
             Program.Loggit(this, message, ConsoleColor.DarkRed);
